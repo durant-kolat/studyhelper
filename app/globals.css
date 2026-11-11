@@ -1,0 +1,55 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background-color: #FBF7F0;
+  color: #1B1F3B;
+}
+
+/* lignes de cahier discrètes derrière le contenu du dashboard */
+.ruled-bg {
+  background-image: repeating-linear-gradient(
+    to bottom,
+    transparent,
+    transparent 43px,
+    #E4E1D8 44px
+  );
+}
+
+::selection {
+  background: #E8A33D;
+  color: #1B1F3B;
+}
+
+:focus-visible {
+  outline: 2px solid #C1542E;
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.001ms !important;
+    transition-duration: 0.001ms !important;
+  }
+}
+
+/* Panneaux des outils flottants (calculatrice, horloge) : ne dépassent jamais
+   l'écran. `dvh` (hauteur réelle visible sur mobile, barre d'adresse comprise)
+   avec repli sur `vh` pour les navigateurs plus anciens. */
+.floating-panel {
+  max-height: calc(100vh - 7rem);
+  max-height: calc(100dvh - 7rem - env(safe-area-inset-bottom, 0px));
+}
+
+/* Cadre de l'assistant : occupe la hauteur visible restante (en-tête + marge
+   basse réservée aux outils flottants déduits). */
+.assistant-frame {
+  height: calc(100vh - 11rem);
+  height: calc(100dvh - 11rem);
+  min-height: 26rem;
+}
