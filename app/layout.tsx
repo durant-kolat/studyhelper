@@ -19,8 +19,8 @@ export const metadata: Metadata = {
   title: "Study Helper",
   description: "Étudier, s'organiser, s'évaluer et progresser.",
   verification:{
-    google:<meta name="google-site-verification" content="lcVWRQYBYh5lHVvIg_AfUQ9VvOT3X5a7Mf7Marh1Oe0" />
-  }
+    google:"lcVWRQYBYh5lHVvIg_AfUQ9VvOT3X5a7Mf7Marh1Oe0", 
+  }, 
 };
 
 export default function RootLayout({
