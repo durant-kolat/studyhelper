@@ -18,8 +18,8 @@ const inter = Inter({
 export const metadata: Metadata = {
   title: "Study Helper",
   description: "Étudier, s'organiser, s'évaluer et progresser.",
-  vérification:{
-    Google:<meta name="google-site-verification" content="lcVWRQYBYh5lHVvIg_AfUQ9VvOT3X5a7Mf7Marh1Oe0" />
+  verification:{
+    google:<meta name="google-site-verification" content="lcVWRQYBYh5lHVvIg_AfUQ9VvOT3X5a7Mf7Marh1Oe0" />
   }
 };
 
