@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import { Fraunces, Inter } from "next/font/google";
 import "./globals.css";
 import { I18nProvider } from "@/lib/i18n/I18nProvider";
-
 const fraunces = Fraunces({
   subsets: ["latin"],
   variable: "--font-fraunces",
@@ -19,6 +18,9 @@ const inter = Inter({
 export const metadata: Metadata = {
   title: "Study Helper",
   description: "Étudier, s'organiser, s'évaluer et progresser.",
+  vérification:{
+    Google:<meta name="google-site-verification" content="lcVWRQYBYh5lHVvIg_AfUQ9VvOT3X5a7Mf7Marh1Oe0" />
+  }
 };
 
 export default function RootLayout({
