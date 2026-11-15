@@ -15,9 +15,14 @@ const inter = Inter({
   weight: ["400", "500", "600", "700"],
 });
 
-export const metadata: Metadata = {
-  title: "Study Helper",
-  description: "Étudier, s'organiser, s'évaluer et progresser.",
+export const metadata = {
+  title: "StudyHelper - Aide aux devoirs et révision pour étudiants",
+  description: "StudyHelper t'aide à réviser, comprendre tes cours et faire tes devoirs plus vite. Application pour étudiants au Cameroun et en Afrique.",
+  keywords: ["studyhelper", "aide etude", "aide devoir", "revision bac"],
+  authors: [{ name: "StudyHelper" }],
+  openGraph: {
+    url: "https://studyhelper-lovat.vercel.app",
+    siteName: "StudyHelper",
   verification:{
     google:"lcVWRQYBYh5lHVvIg_AfUQ9VvOT3X5a7Mf7Marh1Oe0", 
   }, 
