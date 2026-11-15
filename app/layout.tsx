@@ -23,6 +23,7 @@ export const metadata = {
   openGraph: {
     url: "https://studyhelper-lovat.vercel.app",
     siteName: "StudyHelper",
+  }
   verification:{
     google:"lcVWRQYBYh5lHVvIg_AfUQ9VvOT3X5a7Mf7Marh1Oe0", 
   }, 
