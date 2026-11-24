@@ -9,6 +9,15 @@ const fraunces = Fraunces({
   style: ["normal", "italic"],
 });
 
+export const metadata = {
+  title: "StudyHelper",
+  description: "Ton assistant d'étude",
+  manifest: "/manifest.json",
+  themeColor: "#F5C518",
+  icons: {
+    icon: "/icon-192.png",
+  },
+}
 const inter = Inter({
   subsets: ["latin"],
   variable: "--font-inter",
