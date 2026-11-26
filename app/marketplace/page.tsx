@@ -131,7 +131,7 @@ function BrowseTab({ userId }: { userId: string | null }) {
   // Le numéro est obligatoire en Mobile Money : sans numéro valide, aucun paiement n'est lancé.
   async function handleBook(offer: Offer) {
     if (!method) {
-      setError("Choisis un moyen de paiement : MTN MoMo ou Orange Money.");
+      setError("Choisis un moyen de paiement : Notch Pay.");
       return;
     }
     if (methodRequiresPhone(method)) {
@@ -146,8 +146,7 @@ function BrowseTab({ userId }: { userId: string | null }) {
     setError(null);
     try {
       const result = await startPayment({ type: "tutoring", offerId: offer.id, method, phone });
-      // Orange Money / carte / PayPal : page officielle du prestataire. MTN MoMo : confirmation sur le
-      // téléphone — la page de suivi vérifie le paiement côté serveur.
+      // Notch Pay : confirmation sur le téléphone — la page de suivi vérifie le paiement côté serveur.
       window.location.href = result.paymentUrl ?? `/payments/return?ref=${encodeURIComponent(result.ref)}`;
     } catch (err) {
       setBookingId(null);
@@ -220,7 +219,7 @@ function BrowseTab({ userId }: { userId: string | null }) {
               {openOfferId === offer.id && (
                 <div className="mt-4 border-t border-mist pt-3">
                   <PaymentMethodSelector
-                    allowed={["mtn", "orange"]}
+                    allowed={["notchpay"]}
                     value={method}
                     onChange={(id) => {
                       setMethod(id);
@@ -351,8 +350,6 @@ function MyOffersTab({ userId }: { userId: string | null }) {
       description: form.description,
       price: Number(form.price),
       format: form.format,
-      // Pas encore de champ dédié dans le formulaire : durée par défaut
-      // d'une session (modifiable plus tard si besoin d'un vrai réglage).
       duration_minutes: 60,
     });
     setSaving(false);
@@ -483,4 +480,4 @@ function MyOffersTab({ userId }: { userId: string | null }) {
       )}
     </div>
   );
-}
+        }
