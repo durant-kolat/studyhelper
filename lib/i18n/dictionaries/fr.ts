@@ -54,6 +54,7 @@ export const fr = {
   "pay.title": "Moyen de paiement",
   "pay.method.mtn": "MTN Mobile Money",
   "pay.method.orange": "Orange Money",
+  "pay.method.notchpay": "Notch Pay",
   "pay.method.mastercard": "Mastercard",
   "pay.tagline.push": "Confirmation directement sur votre téléphone",
   "pay.tagline.card": "Carte bancaire — saisie sur la page sécurisée du prestataire",
