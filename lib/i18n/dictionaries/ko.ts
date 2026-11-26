@@ -53,6 +53,7 @@ export const ko: Dictionary = {
   "pay.title": "결제 수단",
   "pay.method.mtn": "MTN Mobile Money",
   "pay.method.orange": "Orange Money",
+  "pay.method.notchpay": "NotchPay",
   "pay.method.mastercard": "Mastercard",
   "pay.tagline.push": "휴대폰에서 직접 확인",
   "pay.tagline.card": "은행 카드 — 제공업체의 보안 페이지에서 입력",
