@@ -53,6 +53,7 @@ export const nl: Dictionary = {
   "pay.title": "Betaalmethode",
   "pay.method.mtn": "MTN Mobile Money",
   "pay.method.orange": "Orange Money",
+  "pay.method.notchpay": "NotchPay",
   "pay.method.mastercard": "Mastercard",
   "pay.tagline.push": "Bevestig rechtstreeks op je telefoon",
   "pay.tagline.card": "Bankkaart — ingevoerd op de beveiligde pagina van de aanbieder",
