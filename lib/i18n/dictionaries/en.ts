@@ -53,6 +53,7 @@ export const en: Dictionary = {
   "pay.title": "Payment method",
   "pay.method.mtn": "MTN Mobile Money",
   "pay.method.orange": "Orange Money",
+  "pay.method.notchpay": "NotchPay",
   "pay.method.mastercard": "Mastercard",
   "pay.tagline.push": "Confirm directly on your phone",
   "pay.tagline.card": "Bank card — entered on the provider's secure page",
