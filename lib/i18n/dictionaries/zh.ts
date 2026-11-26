@@ -53,6 +53,7 @@ export const zh: Dictionary = {
   "pay.title": "支付方式",
   "pay.method.mtn": "MTN Mobile Money",
   "pay.method.orange": "Orange Money",
+  "pay.method.notchpay": "NotchPay",
   "pay.method.mastercard": "Mastercard",
   "pay.tagline.push": "直接在手机上确认",
   "pay.tagline.card": "银行卡 — 在服务商的安全页面输入",
