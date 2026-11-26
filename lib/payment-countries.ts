@@ -77,8 +77,7 @@ export function enabledCountryCodes(raw: string | null | undefined = ENV_COUNTRI
   return codes.length ? [...new Set(codes)] : [DEFAULT_COUNTRY];
 }
 
-export type MethodAvailability = { mtn: boolean; orange: boolean; card: boolean; paypal: boolean };
-
+export type MethodAvailability = { mtn: boolean; orange: boolean; card: boolean; paypal: boolean; notchpay: boolean };
 /**
  * Moyens PROPOSABLES dans un pays (règle statique, sans secret). La disponibilité RÉELLE (identifiants configurés, tarif défini)
  * est décidée par le serveur : voir /api/payments/methods. MTN / Orange n'existent que dans les pays où l'opérateur opère ;
