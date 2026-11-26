@@ -53,6 +53,7 @@ export const ja: Dictionary = {
   "pay.title": "お支払い方法",
   "pay.method.mtn": "MTN Mobile Money",
   "pay.method.orange": "Orange Money",
+  "pay.method.notchpay": "NotchPay",
   "pay.method.mastercard": "Mastercard",
   "pay.tagline.push": "スマートフォンで直接確認",
   "pay.tagline.card": "銀行カード — プロバイダーの安全なページで入力",
