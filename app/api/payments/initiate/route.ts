@@ -18,13 +18,11 @@ import type { StartPaymentResult } from "@/lib/billing/types";
 
 export const runtime = "nodejs";
 
-// Anti-abus : au-delà, on demande d'attendre (chaque initiation crée une ligne et appelle un prestataire).
 const MAX_ATTEMPTS_PER_10_MIN = 8;
 
 const fail = (error: string, status: number, code?: string, extra?: Record<string, unknown>) =>
   NextResponse.json({ error, ...(code ? { code } : {}), ...extra }, { status });
 
-/** URL de notification / retour / annulation. Retour et annulation ramènent sur la page de suivi, qui fait vérifier le vrai statut par le serveur. */
 function urlsFor(provider: PaymentProvider, ref: string) {
   const base = appUrl();
   const status = `${base}/payments/return?ref=${encodeURIComponent(ref)}`;
@@ -35,17 +33,6 @@ function urlsFor(provider: PaymentProvider, ref: string) {
   };
 }
 
-/**
- * Crée une transaction « pending » côté serveur, puis lance le paiement chez le prestataire.
- *
- * Corps : { type: "premium" | "tutoring", method: "mtn" | "orange" | "card" | "paypal",
- *           plan? (premium : mensuel | trimestriel | annuel), offerId? (tutoring),
- *           phone? (OBLIGATOIRE pour MTN et Orange Money : la demande de paiement est envoyée à ce numéro) }
- *
- * Le montant et la durée viennent TOUJOURS du serveur (jamais du navigateur). Rien n'est
- * considéré comme payé ici : Premium n'est activé qu'après vérification du paiement auprès
- * du prestataire (webhooks, /api/payments/verify, tâche planifiée).
- */
 export async function POST(req: NextRequest) {
   const user = await getAuthenticatedUser(req);
   if (!user) return fail("Non authentifié.", 401);
@@ -60,7 +47,6 @@ export async function POST(req: NextRequest) {
 
   const type = typeof body.type === "string" ? body.type : "premium";
 
-  // --- Paiement individuel de groupe : SUPPRIMÉ (l'accès aux groupes est inclus dans Premium) ---
   if (type === "group_access") {
     return fail(
       "Le paiement individuel des groupes n'existe plus : l'accès aux groupes est inclus dans l'abonnement Premium.",
@@ -70,12 +56,10 @@ export async function POST(req: NextRequest) {
   }
   if (type !== "premium" && type !== "tutoring") return fail("Type de paiement inconnu.", 400);
 
-  // --- Moyen de paiement (+ numéro Mobile Money) : validé AVANT toute écriture ou appel externe ---
   if (!isPaymentMethodId(body.method)) {
     return fail("Choisis un moyen de paiement.", 400, "method_required");
   }
   const method = PAYMENT_METHODS[body.method];
-  // --- Pays : choisi par l'utilisateur (jamais déduit de l'adresse IP), activé côté serveur, avec ce moyen de paiement disponible ---
   const country = normalizeCountryCode(body.country ?? DEFAULT_COUNTRY);
   if (!country || !getCountry(country) || !enabledCountryCodes().includes(country)) {
     return fail("Le paiement n'est pas disponible dans ce pays.", 400, "country_invalid");
@@ -100,35 +84,35 @@ export async function POST(req: NextRequest) {
 
   let { data: profile } = await supabaseAdmin
     .from("profiles")
-    .select("account_type, full_name, subscription_status, subscription_expires_at, premium_expires_at")
+    .select("account_type, full_name, subscription_status, subscription_expires_at")
     .eq("id", userId)
     .single();
 
-  // Si le profil manque (ancien compte), on le crée automatiquement
-  // au lieu de bloquer l'utilisateur. Il ne verra jamais l'erreur.
   if (!profile) {
-    const { data: created } = await supabaseAdmin
+    const { data: created, error: createError } = await supabaseAdmin
       .from("profiles")
       .insert({
         id: userId,
-        full_name: user.email ?? "Utilisateur",
+        full_name: user.user_metadata?.full_name || user.user_metadata?.name || "Utilisateur",
         account_type: "etudiant",
-        role: "user",
+        role: "etudiant",
         subscription_status: "free",
         xp: 0,
         timezone: "Africa/Douala",
         preferred_language: "fr",
       })
-      .select("account_type, full_name, subscription_status, subscription_expires_at, premium_expires_at")
+      .select("account_type, full_name, subscription_status, subscription_expires_at")
       .single();
+    if (createError) {
+      console.error("[payments/initiate] création profil:", createError.message);
+      return fail("Impossible de créer le profil: " + createError.message, 500);
+    }
     profile = created;
   }
   if (!profile) return fail("Profil introuvable.", 404);
 
-  // Un paiement en attente dont la validité est dépassée devient « expired » (il ne bloque plus).
   await supabaseAdmin.rpc("expire_stale_payments", { p_user_id: userId });
 
-  // Garde-fou contre les rafales de tentatives.
   const since = new Date(Date.now() - 10 * 60 * 1000).toISOString();
   const { count: recent } = await supabaseAdmin
     .from("payments")
@@ -139,7 +123,6 @@ export async function POST(req: NextRequest) {
     return fail("Trop de tentatives de paiement. Patiente quelques minutes avant de réessayer.", 429, "too_many_attempts");
   }
 
-  // --- Ce qu'on vend (montant et durée : TOUJOURS décidés par le serveur) ---
   let amount: number;
   let description: string;
   let plan: string | null = null;
@@ -151,9 +134,8 @@ export async function POST(req: NextRequest) {
     if (profile.account_type === "entreprise") {
       return fail("L'offre Entreprise se négocie sur devis, pas d'auto-souscription.", 400);
     }
-    const requestedPlan = body.plan ?? body.term; // `term` : ancien nom du champ
+    const requestedPlan = body.plan ?? body.term;
     if (!isTerm(requestedPlan)) return fail("Choisis une durée d'abonnement valide.", 400, "plan_invalid");
-    // Le tarif dépend de la devise du pays : CFA (XAF/XOF) = tarif de base ; autres devises = tableau de tarifs explicite, sinon pas payable.
     const price = premiumPriceFor(profile.account_type, requestedPlan, currency);
     if (!price) {
       return premiumPrice(profile.account_type, requestedPlan)
@@ -163,11 +145,10 @@ export async function POST(req: NextRequest) {
 
     const state = getPremiumState({
       status: profile.subscription_status,
-      expiresAt: profile.premium_expires_at ?? profile.subscription_expires_at,
+      expiresAt: profile.subscription_expires_at,
     });
     if (state.isUnlimited) return fail("Ton Premium est illimité : aucun paiement n'est nécessaire.", 400, "premium_unlimited");
 
-    // Un seul paiement Premium « en attente » à la fois : jamais de double paiement involontaire.
     const { data: pendingRow } = await supabaseAdmin
       .from("payments")
       .select(PAYMENT_COLUMNS)
@@ -200,7 +181,6 @@ export async function POST(req: NextRequest) {
       .single();
     if (!offer || !offer.active) return fail("Offre introuvable ou inactive.", 404);
     if (offer.teacher_id === userId) return fail("Tu ne peux pas réserver ta propre offre.", 400);
-    // Les cours particuliers sont tarifés en francs CFA : pas de conversion automatique vers une autre devise.
     if (!isCfaCurrency(currency)) return fail("Le tarif n'est pas encore défini pour la devise de ce pays.", 400, "currency_unavailable");
 
     const { data: booking, error: bookingError } = await supabaseAdmin
@@ -222,7 +202,6 @@ export async function POST(req: NextRequest) {
     if (bookingId) await supabaseAdmin.from("tutoring_bookings").update({ status: "cancelled" }).eq("id", bookingId);
   };
 
-  // --- Transaction unique créée côté serveur AVANT le paiement ---
   const ref = provider.newReference();
   const expiresAt = new Date(Date.now() + provider.pendingTtlMinutes * 60_000).toISOString();
 
@@ -238,20 +217,17 @@ export async function POST(req: NextRequest) {
     duration_days: durationDays,
     status: "pending",
     expires_at: expiresAt,
-    // Jamais le numéro complet : seulement un masque pour s'y retrouver.
     meta: { ...meta, method: method.id, country, ...(phoneNational ? { phone_masked: maskPhone(phoneNational) } : {}) },
   });
   if (insertError) {
     await cleanupBooking();
     if (insertError.code === "23505" && type === "premium") {
-      // Course perdue contre une autre requête simultanée : l'index unique a protégé du double paiement.
       return fail("Un paiement Premium est déjà en cours de vérification.", 409, "payment_pending");
     }
     console.error(`[payments/initiate] insertion (${type}) :`, insertError.message);
     return fail("Impossible de créer le paiement pour le moment. Réessaie dans un instant.", 500);
   }
 
-  // --- Appel du prestataire ---
   const result = await provider.initiate({
     ref,
     amount,
@@ -269,14 +245,12 @@ export async function POST(req: NextRequest) {
   if (!result.ok) {
     await supabaseAdmin
       .from("payments")
-      .update({ status: "failed", failure_reason: "provider_error", updated_at: new Date().toISOString() })
+      .update({ status: "failed" })
       .eq("provider_ref", ref);
     await cleanupBooking();
-    return fail(result.error, result.code === "payment_unavailable" ? 503 : 502, result.code);
+    return fail(result.error || "Le prestataire a refusé le paiement.", 502, "provider_error");
   }
 
-  // Références du prestataire (ex. identifiant de commande PayPal, indispensable pour interroger le statut) :
-  // gardées côté serveur, jamais renvoyées au navigateur.
   if (result.meta) {
     const { error: metaError } = await supabaseAdmin
       .from("payments")
