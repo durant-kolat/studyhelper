@@ -53,7 +53,6 @@ export const COUNTRIES: CountryConfig[] = [
   { code: "SZ", dial: "268", currency: "SZL", minDigits: 8, maxDigits: 8, example: "7612 3456", mtn: true, orange: false, verified: false },
   { code: "MG", dial: "261", currency: "MGA", minDigits: 9, maxDigits: 9, example: "034 12 345 67", mtn: false, orange: true, verified: false },
   { code: "BW", dial: "267", currency: "BWP", minDigits: 8, maxDigits: 8, example: "71 234 567", mtn: false, orange: true, verified: false },
-  // Autre pays (carte Visa / Mastercard et PayPal seulement, facturés dans la devise internationale du prestataire). ZZ = « région non précisée » (ISO).
   { code: "ZZ", dial: "", currency: "EUR", minDigits: 0, maxDigits: 0, example: "", mtn: false, orange: false, verified: true },
 ];
 
@@ -78,6 +77,7 @@ export function enabledCountryCodes(raw: string | null | undefined = ENV_COUNTRI
 }
 
 export type MethodAvailability = { mtn: boolean; orange: boolean; card: boolean; paypal: boolean; notchpay: boolean };
+
 /**
  * Moyens PROPOSABLES dans un pays (règle statique, sans secret). La disponibilité RÉELLE (identifiants configurés, tarif défini)
  * est décidée par le serveur : voir /api/payments/methods. MTN / Orange n'existent que dans les pays où l'opérateur opère ;
@@ -85,8 +85,9 @@ export type MethodAvailability = { mtn: boolean; orange: boolean; card: boolean;
  */
 export function availableMethods(countryCode: string, enabled: string[] = enabledCountryCodes()): MethodAvailability {
   const c = getCountry(countryCode);
-    if (!c || !enabled.includes(c.code)) return { mtn: false, orange: false, card: false, paypal: false, notchpay: false };
-    return { mtn: c.mtn, orange: c.orange, card: true, paypal: true, notchpay: true };
+  if (!c || !enabled.includes(c.code)) return { mtn: false, orange: false, card: false, paypal: false, notchpay: false };
+  return { mtn: c.mtn, orange: c.orange, card: true, paypal: true, notchpay: true };
+}
 
 export const isCfaCurrency = (currency: string) => currency === "XAF" || currency === "XOF";
 
@@ -112,7 +113,7 @@ export function parseMobileNumber(input: string | null | undefined, countryCode:
   else if (digits.startsWith("00")) digits = digits.slice(2);
 
   if (international) {
-    if (!digits.startsWith(country.dial)) return { ok: false, reason: "invalid" }; // indicatif d'un autre pays
+    if (!digits.startsWith(country.dial)) return { ok: false, reason: "invalid" };
     digits = digits.slice(country.dial.length);
   } else if (digits.startsWith(country.dial) && digits.length === country.dial.length + country.maxDigits) {
     digits = digits.slice(country.dial.length);
