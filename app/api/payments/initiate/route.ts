@@ -98,11 +98,31 @@ export async function POST(req: NextRequest) {
     return fail(provider.unavailableMessage, 503, "payment_unavailable");
   }
 
-  const { data: profile } = await supabaseAdmin
+  let { data: profile } = await supabaseAdmin
     .from("profiles")
     .select("account_type, full_name, subscription_status, subscription_expires_at, premium_expires_at")
     .eq("id", userId)
     .single();
+
+  // Si le profil manque (ancien compte), on le crée automatiquement
+  // au lieu de bloquer l'utilisateur. Il ne verra jamais l'erreur.
+  if (!profile) {
+    const { data: created } = await supabaseAdmin
+      .from("profiles")
+      .insert({
+        id: userId,
+        full_name: user.email ?? "Utilisateur",
+        account_type: "etudiant",
+        role: "user",
+        subscription_status: "free",
+        xp: 0,
+        timezone: "Africa/Douala",
+        preferred_language: "fr",
+      })
+      .select("account_type, full_name, subscription_status, subscription_expires_at, premium_expires_at")
+      .single();
+    profile = created;
+  }
   if (!profile) return fail("Profil introuvable.", 404);
 
   // Un paiement en attente dont la validité est dépassée devient « expired » (il ne bloque plus).
@@ -220,6 +240,63 @@ export async function POST(req: NextRequest) {
     expires_at: expiresAt,
     // Jamais le numéro complet : seulement un masque pour s'y retrouver.
     meta: { ...meta, method: method.id, country, ...(phoneNational ? { phone_masked: maskPhone(phoneNational) } : {}) },
+  });
+  if (insertError) {
+    await cleanupBooking();
+    if (insertError.code === "23505" && type === "premium") {
+      // Course perdue contre une autre requête simultanée : l'index unique a protégé du double paiement.
+      return fail("Un paiement Premium est déjà en cours de vérification.", 409, "payment_pending");
+    }
+    console.error(`[payments/initiate] insertion (${type}) :`, insertError.message);
+    return fail("Impossible de créer le paiement pour le moment. Réessaie dans un instant.", 500);
+  }
+
+  // --- Appel du prestataire ---
+  const result = await provider.initiate({
+    ref,
+    amount,
+    currency,
+    description,
+    userId,
+    customerName: profile.full_name ?? "",
+    customerEmail: user.email,
+    phone: phoneNational,
+    country,
+    method: method.id,
+    urls: urlsFor(provider, ref),
+  });
+
+  if (!result.ok) {
+    await supabaseAdmin
+      .from("payments")
+      .update({ status: "failed", failure_reason: "provider_error", updated_at: new Date().toISOString() })
+      .eq("provider_ref", ref);
+    await cleanupBooking();
+    return fail(result.error, result.code === "payment_unavailable" ? 503 : 502, result.code);
+  }
+
+  // Références du prestataire (ex. identifiant de commande PayPal, indispensable pour interroger le statut) :
+  // gardées côté serveur, jamais renvoyées au navigateur.
+  if (result.meta) {
+    const { error: metaError } = await supabaseAdmin
+      .from("payments")
+      .update({ meta: { ...meta, method: method.id, country, ...(phoneNational ? { phone_masked: maskPhone(phoneNational) } : {}), ...result.meta } })
+      .eq("provider_ref", ref);
+    if (metaError) console.error("[payments/initiate] enregistrement de la référence prestataire :", metaError.message);
+  }
+
+  const response: StartPaymentResult = {
+    ref,
+    flow: result.flow,
+    paymentUrl: result.flow === "redirect" ? result.url : null,
+    provider: provider.id,
+    method: method.id,
+    amount,
+    durationDays,
+    expiresAt,
+  };
+  return NextResponse.json(response);
+        } phone_masked: maskPhone(phoneNational) } : {}) },
   });
   if (insertError) {
     await cleanupBooking();
