@@ -93,7 +93,7 @@ export async function POST(req: NextRequest) {
       .from("profiles")
       .insert({
         id: userId,
-        full_name: user.user_metadata?.full_name || user.user_metadata?.name || "Utilisateur",
+        full_name: (user as any).user_metadata?.full_name || (user as any).user_metadata?.name || user.email?.split("@")[0] || "Utilisateur",
         account_type: "etudiant",
         role: "etudiant",
         subscription_status: "free",
