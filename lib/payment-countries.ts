@@ -85,9 +85,8 @@ export type MethodAvailability = { mtn: boolean; orange: boolean; card: boolean;
  */
 export function availableMethods(countryCode: string, enabled: string[] = enabledCountryCodes()): MethodAvailability {
   const c = getCountry(countryCode);
-  if (!c || !enabled.includes(c.code)) return { mtn: false, orange: false, card: false, paypal: false };
-  return { mtn: c.mtn, orange: c.orange, card: true, paypal: true };
-}
+    if (!c || !enabled.includes(c.code)) return { mtn: false, orange: false, card: false, paypal: false, notchpay: false };
+    return { mtn: c.mtn, orange: c.orange, card: true, paypal: true, notchpay: true };
 
 export const isCfaCurrency = (currency: string) => currency === "XAF" || currency === "XOF";
 
