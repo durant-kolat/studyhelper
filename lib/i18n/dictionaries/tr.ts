@@ -53,6 +53,7 @@ export const tr: Dictionary = {
   "pay.title": "Ödeme yöntemi",
   "pay.method.mtn": "MTN Mobile Money",
   "pay.method.orange": "Orange Money",
+  "pay.method.notchpay": "NotchPay",
   "pay.method.mastercard": "Mastercard",
   "pay.tagline.push": "Doğrudan telefonunuzda onaylayın",
   "pay.tagline.card": "Banka kartı — sağlayıcının güvenli sayfasında girilir",
